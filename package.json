@@ -1,0 +1,12 @@
+{
+  "name": "library-software",
+  "version": "1.0.0",
+  "description": "Library Software For Andamana College",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC"
+}
