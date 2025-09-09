@@ -1,17 +1,20 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
+const bcrypt = require("bcryptjs");
 
 const UserSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
     email: {
       type: String,
       required: true,
       lowercase: true,
+      validate: [validator.isEmail, "It does not look like an email"],
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
     password: {
@@ -52,9 +55,13 @@ const UserSchema = new mongoose.Schema(
       url: String,
     },
 
-    verificationCode: Number,
+    verificationCode: {
+      type: Number,
+    },
 
-    verificationCodeExpires: Date,
+    verificationCodeExpires: {
+      type: Date,
+    },
 
     resetPasswordToken: String,
 
@@ -64,6 +71,21 @@ const UserSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+function generateRandomNumber() {
+  const firstDigit = Math.floor(Math.random() * 9 + 1);
+  const remDigits = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
+  return parseInt(firstDigit + remDigits);
+}
+
+UserSchema.methods.generateVerificationCode = function () {
+  const otp = generateRandomNumber();
+  this.verificationCode = otp;
+  this.verificationCodeExpires = Date.now() + 5 * 60 * 1000;
+  return otp;
+};
 
 const User = mongoose.model("User", UserSchema);
 module.exports = User;

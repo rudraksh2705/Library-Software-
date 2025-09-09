@@ -2,12 +2,15 @@ const express = require("express");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const appError = require("./Utils/appError");
+const appError = require("./Utils/ErrorHandlers/appError");
+const userRouter = require("./Routes/UserRouter");
+const morgan = require("morgan");
 
 dotenv.config({ path: "./config.env" });
 
 const app = express();
 
+app.use(morgan("dev"));
 app.use(
   cors({
     origin: ["http://localhost:5173"],
@@ -20,11 +23,14 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use(`/api/v1/users`, userRouter);
+
 app.use((err, req, res, next) => {
   err.message = err.message || "Internal Server Error";
   err.statusCode = err.statusCode || 500;
 
   if (err.code === 11000) {
+    console.log(err);
     const statusCode = 400;
     const message = "Duplicate Field Value Entered";
     err = new appError(message, statusCode);
