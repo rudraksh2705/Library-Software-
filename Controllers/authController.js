@@ -9,6 +9,7 @@ const secret = process.env.JWT_SECRET;
 const sendToken = require("../Utils/sendToken");
 const sendEmail = require("../Utils/Email/sendEmail");
 const generateForgotPasswordEmailTemplate = require("../Utils/Email/sendForgotPasswordToken");
+const app = require("../app");
 
 /*
 req.user sirf ek request ke dauran hi valid hota hai.
@@ -236,5 +237,42 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: "success",
     message: "Password Changed Succesfully",
+  });
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user._id).select("+password");
+
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return next(
+      new appError(
+        "CurrentPassword , newPassword and ConfirmPassoword are required",
+        401
+      )
+    );
+  }
+
+  if (confirmPassword != newPassword) {
+    return next(new appError("Passwords do not match", 401));
+  }
+
+  if (newPassword.length < 8 || newPassword.length > 16) {
+    return next(new appError("Password length must be between 8 and 16", 401));
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.password);
+
+  if (!isValid) {
+    return next(new appError("Your password is incorrect", 401));
+  }
+
+  user.password = req.body.newPassword;
+  await user.save();
+
+  res.status(201).json({
+    status: "success",
+    message: "password changed successfully",
   });
 });

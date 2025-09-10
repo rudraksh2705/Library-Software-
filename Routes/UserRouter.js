@@ -13,4 +13,9 @@ Router.route("/logout").post(
 Router.route("/me").get(authController.isAuthenticated, authController.getUser);
 Router.route("/forgetPassword").post(authController.forgetPassword);
 Router.route("/password/reset/:token").post(authController.resetPassword);
+Router.route("/updatePassword").patch(
+  authController.isAuthenticated,
+  authController.updatePassword
+);
+
 module.exports = Router;
