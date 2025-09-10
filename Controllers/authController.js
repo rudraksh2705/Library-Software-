@@ -7,12 +7,14 @@ const sendVerificationCode = require("../Utils/Email/sendVerificationCode");
 const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
 const sendToken = require("../Utils/sendToken");
+const app = require("../app");
 
 exports.isAuthenticated = catchAsync(async (req, res, next) => {
   const { token } = req.cookies;
   if (!token) {
-    return next(new appError("User is already logout", 400));
+    return next(new appError("User is currently logged out", 400));
   }
+
   const decoded = jwt.verify(token, secret);
   req.user = await User.findById(decoded.id);
 
@@ -116,10 +118,12 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new appError("Password is incorrect", 401));
   }
 
+  req.user = user;
   return sendToken(user, 200, "User Login Successful", res);
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
+  req.user = null;
   res
     .status(200)
     .cookie("token", "", {
@@ -130,4 +134,12 @@ exports.logout = catchAsync(async (req, res, next) => {
       status: "success",
       message: "Log Out Successful",
     });
+});
+
+exports.getUser = catchAsync(async (req, res, next) => {
+  const user = req.user;
+  res.status(200).json({
+    status: "success",
+    user,
+  });
 });

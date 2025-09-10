@@ -10,5 +10,6 @@ Router.route("/logout").post(
   authController.isAuthenticated,
   authController.logout
 );
+Router.route("/me").get(authController.isAuthenticated, authController.getUser);
 
 module.exports = Router;
