@@ -7,7 +7,14 @@ const sendVerificationCode = require("../Utils/Email/sendVerificationCode");
 const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
 const sendToken = require("../Utils/sendToken");
-const app = require("../app");
+const sendEmail = require("../Utils/Email/sendEmail");
+const generateForgotPasswordEmailTemplate = require("../Utils/Email/sendForgotPasswordToken");
+
+/*
+req.user sirf ek request ke dauran hi valid hota hai.
+Uske baad wo memory se hata diya jaata hai.
+Next request pe middleware usko dobara set karega (cookie/token ke base par).
+*/
 
 exports.isAuthenticated = catchAsync(async (req, res, next) => {
   const { token } = req.cookies;
@@ -118,12 +125,10 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new appError("Password is incorrect", 401));
   }
 
-  req.user = user;
   return sendToken(user, 200, "User Login Successful", res);
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
-  req.user = null;
   res
     .status(200)
     .cookie("token", "", {
@@ -142,4 +147,49 @@ exports.getUser = catchAsync(async (req, res, next) => {
     status: "success",
     user,
   });
+});
+
+exports.forgetPassword = catchAsync(async (req, res, next) => {
+  if (!req.body.email) {
+    return next(new appError("Provide your email", 401));
+  }
+
+  const user = await User.findOne({
+    email: req.body.email,
+    accountVerified: true,
+  });
+
+  if (!user) {
+    return next(new appError("No such a user", 401));
+  }
+
+  const resetToken = user.getResetPasswordToken();
+  console.log(resetToken);
+  await user.save({ validateBeforeSave: false });
+
+  const resetPasswordUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/api/v1/users/password/reset/${resetToken}`;
+
+  const message = generateForgotPasswordEmailTemplate(resetPasswordUrl);
+  console.log(message);
+  console.log("ok1");
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: "Password Reset For Andaman College Library",
+      message,
+    });
+
+    console.log("ok2");
+    res.status(200).json({
+      status: "success",
+      message: `email sent to ${user.email} successfuly`,
+    });
+  } catch (err) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordTokenExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+    return next(new appError(err.message, 500));
+  }
 });

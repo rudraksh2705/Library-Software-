@@ -3,6 +3,7 @@ const validator = require("validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
+const crypto = require("crypto");
 
 const UserSchema = new mongoose.Schema(
   {
@@ -96,6 +97,8 @@ UserSchema.methods.generateVerificationCode = function () {
   return otp;
 };
 
+UserSchema.methods.getResetPasswordToken = function () {};
+
 UserSchema.methods.generateToken = function () {
   const token = jwt.sign({ id: this._id }, secret);
   return token;
@@ -105,6 +108,16 @@ UserSchema.methods.check = async function (userPassword) {
   console.log(userPassword);
   const decoded = await bcrypt.compare(userPassword, this.password);
   return decoded;
+};
+
+UserSchema.methods.getResetPasswordToken = function () {
+  const token = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+  this.resetPasswordTokenExpires = Date.now() + 15 * 60 * 1000;
+  return this.resetPasswordToken;
 };
 
 const User = mongoose.model("User", UserSchema);
