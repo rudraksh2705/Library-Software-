@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const secret = process.env.JWT_SECRET;
 
 const UserSchema = new mongoose.Schema(
   {
@@ -72,6 +74,13 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
 function generateRandomNumber() {
   const firstDigit = Math.floor(Math.random() * 9 + 1);
   const remDigits = Math.floor(Math.random() * 10000)
@@ -83,8 +92,19 @@ function generateRandomNumber() {
 UserSchema.methods.generateVerificationCode = function () {
   const otp = generateRandomNumber();
   this.verificationCode = otp;
-  this.verificationCodeExpires = Date.now() + 5 * 60 * 1000;
+  this.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
   return otp;
+};
+
+UserSchema.methods.generateToken = function () {
+  const token = jwt.sign({ id: this._id }, secret);
+  return token;
+};
+
+UserSchema.methods.check = async function (userPassword) {
+  console.log(userPassword);
+  const decoded = await bcrypt.compare(userPassword, this.password);
+  return decoded;
 };
 
 const User = mongoose.model("User", UserSchema);

@@ -6,6 +6,18 @@ const catchAsync = require("../Utils/ErrorHandlers/catchAsync");
 const sendVerificationCode = require("../Utils/Email/sendVerificationCode");
 const jwt = require("jsonwebtoken");
 const secret = process.env.JWT_SECRET;
+const sendToken = require("../Utils/sendToken");
+
+exports.isAuthenticated = catchAsync(async (req, res, next) => {
+  const { token } = req.cookies;
+  if (!token) {
+    return next(new appError("User is already logout", 400));
+  }
+  const decoded = jwt.verify(token, secret);
+  req.user = await User.findById(decoded.id);
+
+  next();
+});
 
 exports.register = catchAsync(async (req, res, next) => {
   const { email, name, password } = req.body;
@@ -49,11 +61,8 @@ exports.verify = catchAsync(async (req, res, next) => {
   if (!email || !otp) {
     return next(new appError("Email and otp are required", 401));
   }
-  console.log("ok1");
 
   const users = await User.find({ email }).sort({ createdAt: -1 });
-
-  console.log("ok2");
   if (users.length === 0) {
     return next(new appError("Invalid Applicant", 404));
   }
@@ -65,7 +74,6 @@ exports.verify = catchAsync(async (req, res, next) => {
   }
 
   console.log(secret);
-  console.log("ok3");
 
   if (Date.now() >= user.verificationCodeExpires) {
     next(new appError("Your time for registeration via otp is expired", 401));
@@ -79,13 +87,47 @@ exports.verify = catchAsync(async (req, res, next) => {
   user.verificationCode = null;
   user.verificationCodeExpires = null;
 
-  await user.save();
-  const token = jwt.sign({ id: user._id }, secret);
+  console.log("ok1");
+  await user.save({ validateModifiedOnly: true });
 
-  return res.status(201).json({
-    status: "success",
-    message: "User Registered Successfully",
-    user,
-    token,
-  });
+  console.log("ok2");
+
+  return sendToken(user, 200, "Account Verified", res);
+});
+
+exports.login = catchAsync(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return next(new appError("Provide Email and password for login", 401));
+  }
+
+  const user = await User.findOne({ email, accountVerified: true }).select(
+    "+password"
+  );
+
+  if (!user) {
+    return next(new appError("No such a user with this email", 401));
+  }
+
+  const decoded = await user.check(password);
+
+  if (!decoded) {
+    return next(new appError("Password is incorrect", 401));
+  }
+
+  return sendToken(user, 200, "User Login Successful", res);
+});
+
+exports.logout = catchAsync(async (req, res, next) => {
+  res
+    .status(200)
+    .cookie("token", "", {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+    })
+    .json({
+      status: "success",
+      message: "Log Out Successful",
+    });
 });

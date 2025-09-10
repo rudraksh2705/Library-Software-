@@ -5,5 +5,10 @@ const Router = express.Router();
 
 Router.route("/register").post(authController.register);
 Router.route("/verifyOTP").post(authController.verify);
+Router.route("/login").post(authController.login);
+Router.route("/logout").post(
+  authController.isAuthenticated,
+  authController.logout
+);
 
 module.exports = Router;
