@@ -193,3 +193,48 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
     return next(new appError(err.message, 500));
   }
 });
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { token } = req.params;
+  console.log(token);
+  const resetToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  const user = await User.findOne({
+    resetPasswordToken: resetToken,
+    resetPasswordTokenExpires: { $gt: Date.now() },
+  });
+
+  if (!user) {
+    return next(
+      new appError(
+        "Your reset Password Token duration is eithered expired or invalid token",
+        400
+      )
+    );
+  }
+
+  if (!req.body.password || !req.body.passwordConfirm) {
+    return next(
+      new appError("Password and Confirm password fields are required", 401)
+    );
+  }
+
+  if (req.body.password !== req.body.passwordConfirm) {
+    return next(new appError("Passwords did not match", 401));
+  }
+
+  if (req.body.password.length < 8 || req.body.password.length > 16) {
+    return next(new appError("Password length must be between 8 and 16", 401));
+  }
+
+  user.password = req.body.password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordTokenExpires = undefined;
+
+  await user.save(); //this will automatically hash the password
+
+  res.status(201).json({
+    status: "success",
+    message: "Password Changed Succesfully",
+  });
+});

@@ -112,12 +112,14 @@ UserSchema.methods.check = async function (userPassword) {
 
 UserSchema.methods.getResetPasswordToken = function () {
   const token = crypto.randomBytes(20).toString("hex");
+
   this.resetPasswordToken = crypto
     .createHash("sha256")
     .update(token)
     .digest("hex");
+
   this.resetPasswordTokenExpires = Date.now() + 15 * 60 * 1000;
-  return this.resetPasswordToken;
+  return token;
 };
 
 const User = mongoose.model("User", UserSchema);
