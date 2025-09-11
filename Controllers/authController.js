@@ -249,3 +249,12 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
     message: "password changed successfully",
   });
 });
+
+exports.isAuthorized = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(new appError("You can't perfom this action", 401));
+    }
+    next();
+  };
+};
