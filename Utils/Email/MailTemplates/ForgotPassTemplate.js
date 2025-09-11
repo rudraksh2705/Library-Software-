@@ -10,7 +10,7 @@ module.exports = function generateForgotPasswordEmailTemplate(
   <title>Password reset</title>
   <style>
     /* Basic, safe email styles (kept inline-friendly) */
-    body { margin:0; padding:0; background-color:#f4f6f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+/*body { margin:0; padding:0; background-color:#f4f6f8; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
     .container { width:100%; max-width:680px; margin:0 auto; padding:24px; }
     .card { background:#ffffff; border-radius:8px; padding:32px; box-shadow:0 2px 6px rgba(16,24,40,0.06); }
     h1 { font-size:20px; margin:0 0 8px; color:#0f172a; }
@@ -20,7 +20,7 @@ module.exports = function generateForgotPasswordEmailTemplate(
     .muted { color:#94a3b8; font-size:13px; }
     .footer { font-size:13px; color:#94a3b8; text-align:center; margin-top:20px; }
     .preheader { display:none !important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; }
-    /* Make button full-width on small screens */
+    /* Make button full-width on small screens 
     @media (max-width:480px) {
       .btn { display:block; width:100%; text-align:center; }
       .card { padding:20px; }
@@ -74,7 +74,7 @@ module.exports = function generateForgotPasswordEmailTemplate(
 
               <!-- Footer -->
               <div class="footer">
-                <p style="margin:8px 0 0;">© ${new Date().getFullYear()} Your Company. All rights reserved.</p>
+                <p style="margin:8px 0 0;">© ${new Date().getFullYear()} Andaman College. All rights reserved.</p>
               </div>
             </td>
           </tr>

@@ -1,15 +1,16 @@
 const appError = require("../Utils/ErrorHandlers/appError");
 const User = require("../Models/userModel");
+const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+
 const catchAsync = require("../Utils/ErrorHandlers/catchAsync");
-const sendVerificationCode = require("../Utils/Email/sendVerificationCode");
-const jwt = require("jsonwebtoken");
-const secret = process.env.JWT_SECRET;
+const verificationCodeTemplate = require("../Utils/Email/MailTemplates/VerificationTemplate");
 const sendToken = require("../Utils/sendToken");
 const sendEmail = require("../Utils/Email/sendEmail");
-const generateForgotPasswordEmailTemplate = require("../Utils/Email/sendForgotPasswordToken");
-const app = require("../app");
+const generateForgotPasswordEmailTemplate = require("../Utils/Email/MailTemplates/ForgotPassTemplate");
+
+const secret = process.env.JWT_SECRET;
 
 /*
 req.user sirf ek request ke dauran hi valid hota hai.
@@ -17,188 +18,176 @@ Uske baad wo memory se hata diya jaata hai.
 Next request pe middleware usko dobara set karega (cookie/token ke base par).
 */
 
-exports.isAuthenticated = catchAsync(async (req, res, next) => {
-  const { token } = req.cookies;
-  if (!token) {
-    return next(new appError("User is currently logged out", 400));
-  }
-
-  const decoded = jwt.verify(token, secret);
-  req.user = await User.findById(decoded.id);
-
-  next();
-});
-
 exports.register = catchAsync(async (req, res, next) => {
-  const { email, name, password } = req.body;
+  const { email, password, name } = req.body;
 
-  if (!email || !name || !password) {
-    return next(new appError("provide all fields", 401));
+  if (!email || !password || !name) {
+    return next(new appError("email , password and name are required", 401));
   }
 
-  const isRegistered = await User.findOne({ email, accountVerified: true });
+  const registeredUser = await User.findOne({ email, accountVerified: true });
 
-  if (isRegistered) {
-    return next(new appError("A user already exists with this email", 401));
+  if (registeredUser) {
+    return next(new appError("A user exists with this email", 401));
   }
 
-  const registerationAttemptsByUser = await User.find({
+  const allUsers = await User.find({
     email,
     accountVerified: false,
+    createdAt: { $gt: Date.now() - 10 * 60 * 1000 },
   });
 
-  if (registerationAttemptsByUser.length >= 5) {
-    return next(
-      new appError(
-        "Too Many Attempts for registration . You need to wait for some time",
-        400
-      )
-    );
+  if (allUsers.length >= 5) {
+    return next(new appError("Too many attempts , wait for some time", 401));
   }
 
-  const requestingUser = await User.create({ name, email, password });
+  const latestUser = await User.create({ email, password, name });
 
-  const verificationCode = requestingUser.generateVerificationCode();
+  console.log(latestUser);
 
-  await requestingUser.save();
+  const latestEmail = latestUser.email;
+  const otp = latestUser.generateVerificationCode();
+  await latestUser.save();
 
-  sendVerificationCode(verificationCode, email, res);
+  const message = verificationCodeTemplate(otp);
+
+  return await sendEmail(
+    res,
+    latestEmail,
+    "Verification Code(Andaman College)",
+    message,
+    `Verification Code sent to ${latestEmail}`
+  );
 });
 
-exports.verify = catchAsync(async (req, res, next) => {
+exports.verifyCode = catchAsync(async (req, res, next) => {
   const { email, otp } = req.body;
 
-  if (!email || !otp) {
-    return next(new appError("Email and otp are required", 401));
+  if (!email || !otp)
+    return next(new appError("Provide email and otp for verification", 401));
+
+  const allUsers = await User.find({ email });
+  if (allUsers.length === 0) {
+    return next(new appError("Invalid Applicant", 401));
   }
 
-  const users = await User.find({ email }).sort({ createdAt: -1 });
-  if (users.length === 0) {
-    return next(new appError("Invalid Applicant", 404));
+  const user = allUsers.sort((a, b) => b.createdAt - a.createdAt)[0];
+
+  if (otp !== user.verificationCode) {
+    return next(new appError("OTP does not match", 401));
   }
 
-  const user = users[0];
-
-  if (users.length > 1) {
-    await User.deleteMany({ email, _id: { $ne: user._id } });
+  if (user.verificationCodeExpires <= Date.now()) {
+    return next(new appError("Time expired for this otp", 401));
   }
 
-  console.log(secret);
+  await User.deleteMany({ email, createdAt: { $lt: user.createdAt } });
 
-  if (Date.now() >= user.verificationCodeExpires) {
-    next(new appError("Your time for registeration via otp is expired", 401));
-  }
-
-  if (+otp !== +user.verificationCode) {
-    return next(new appError("Incorrect OTP", 401));
-  }
-
-  user.accountVerified = true;
   user.verificationCode = null;
+  user.accountVerified = true;
   user.verificationCodeExpires = null;
 
-  console.log("ok1");
-  await user.save({ validateModifiedOnly: true });
-
-  console.log("ok2");
+  await user.save();
 
   return sendToken(user, 200, "Account Verified", res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
-
-  if (!email || !password) {
-    return next(new appError("Provide Email and password for login", 401));
-  }
+  if (!email || !password)
+    return next(new appError("Provide email and password for login", 401));
 
   const user = await User.findOne({ email, accountVerified: true }).select(
     "+password"
   );
-
   if (!user) {
-    return next(new appError("No such a user with this email", 401));
+    return next(new appError("No such a user", 401));
   }
 
-  const decoded = await user.check(password);
-
-  if (!decoded) {
+  const decode = await user.check(password);
+  if (!decode) {
     return next(new appError("Password is incorrect", 401));
   }
 
-  return sendToken(user, 200, "User Login Successful", res);
+  return sendToken(user, 201, "User Logged in succesfuly", res);
+});
+
+exports.isAuthenticated = catchAsync(async (req, res, next) => {
+  const { token } = req.cookies;
+  if (!token) {
+    return next(new appError("You are currently logged out", 401));
+  }
+
+  const decoded = jwt.verify(token, secret);
+  req.user = await User.findById(decoded.id);
+  next();
 });
 
 exports.logout = catchAsync(async (req, res, next) => {
   res
-    .status(200)
+    .status(201)
     .cookie("token", "", {
       expires: new Date(Date.now()),
       httpOnly: true,
     })
     .json({
       status: "success",
-      message: "Log Out Successful",
+      message: "User logged Out succesfuly",
     });
 });
 
 exports.getUser = catchAsync(async (req, res, next) => {
   const user = req.user;
-  res.status(200).json({
+
+  return res.status(201).json({
     status: "success",
     user,
   });
 });
 
 exports.forgetPassword = catchAsync(async (req, res, next) => {
-  if (!req.body.email) {
-    return next(new appError("Provide your email", 401));
-  }
-
-  const user = await User.findOne({
-    email: req.body.email,
-    accountVerified: true,
-  });
-
+  const { email } = req.body;
+  const user = await User.findOne({ email, accountVerified: true });
   if (!user) {
-    return next(new appError("No such a user", 401));
+    return next(new appError("There is no user with this email", 401));
   }
 
   const resetToken = user.getResetPasswordToken();
   console.log(resetToken);
-  await user.save({ validateBeforeSave: false });
+
+  await user.save();
 
   const resetPasswordUrl = `${req.protocol}://${req.get(
     "host"
   )}/api/v1/users/password/reset/${resetToken}`;
 
   const message = generateForgotPasswordEmailTemplate(resetPasswordUrl);
-  console.log(message);
-  console.log("ok1");
-  try {
-    await sendEmail({
-      email: user.email,
-      subject: "Password Reset For Andaman College Library",
-      message,
-    });
 
-    console.log("ok2");
-    res.status(200).json({
-      status: "success",
-      message: `email sent to ${user.email} successfuly`,
-    });
-  } catch (err) {
-    user.resetPasswordToken = undefined;
-    user.resetPasswordTokenExpires = undefined;
-    await user.save({ validateBeforeSave: false });
-    return next(new appError(err.message, 500));
-  }
+  //res, email, subject, message
+  return await sendEmail(
+    res,
+    email,
+    "Reset Password (Andaman College)",
+    message,
+    `Reset Password Url sent to ${email} `
+  );
 });
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
-  const { token } = req.params;
-  console.log(token);
-  const resetToken = crypto.createHash("sha256").update(token).digest("hex");
+  const { newPassword, confirmPassword } = req.body;
+  if (newPassword.length < 8 || newPassword.length > 16) {
+    return next(new appError("Password length must be between 8 and 16", 401));
+  }
+
+  if (newPassword !== confirmPassword) {
+    return next(new appError("Both Passwords do not match", 401));
+  }
+
+  const token = req.params.token;
+  const resetToken = await crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 
   const user = await User.findOne({
     resetPasswordToken: resetToken,
@@ -206,37 +195,21 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   });
 
   if (!user) {
-    return next(
-      new appError(
-        "Your reset Password Token duration is eithered expired or invalid token",
-        400
-      )
-    );
+    return next(new appError("Invalid or expired token", 401));
+  }
+  if (user.resetPasswordTokenExpires <= Date.now()) {
+    return next(new appError("Token has expired", 401));
   }
 
-  if (!req.body.password || !req.body.passwordConfirm) {
-    return next(
-      new appError("Password and Confirm password fields are required", 401)
-    );
-  }
-
-  if (req.body.password !== req.body.passwordConfirm) {
-    return next(new appError("Passwords did not match", 401));
-  }
-
-  if (req.body.password.length < 8 || req.body.password.length > 16) {
-    return next(new appError("Password length must be between 8 and 16", 401));
-  }
-
-  user.password = req.body.password;
+  user.password = newPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordTokenExpires = undefined;
 
-  await user.save(); //this will automatically hash the password
+  await user.save();
 
   res.status(201).json({
     status: "success",
-    message: "Password Changed Succesfully",
+    message: "Password Changed successfuly",
   });
 });
 

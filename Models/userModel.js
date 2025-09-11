@@ -93,11 +93,11 @@ function generateRandomNumber() {
 UserSchema.methods.generateVerificationCode = function () {
   const otp = generateRandomNumber();
   this.verificationCode = otp;
-  this.verificationCodeExpires = Date.now() + 10 * 60 * 1000;
+  this.verificationCodeExpires = Date.now() + 5 * 60 * 1000;
   return otp;
 };
 
-UserSchema.methods.getResetPasswordToken = function () {};
+// UserSchema.methods.getResetPasswordToken = function () {};
 
 UserSchema.methods.generateToken = function () {
   const token = jwt.sign({ id: this._id }, secret);

@@ -1,29 +1,40 @@
 const nodemailer = require("nodemailer");
 
-const sendEmail = async ({ email, subject, message }) => {
+module.exports = sendEmail = async (
+  res,
+  email,
+  subject,
+  message,
+  postmanmsg
+) => {
   try {
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, // fixed typo
-      port: process.env.SMTP_PORT, // usually 465 (secure) or 587 (TLS)
-      service: process.env.SMTP_SERVICE, // optional, e.g. "gmail"
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: true,
+      service: process.env.SMTP_SERVICE,
       auth: {
         user: process.env.SMTP_MAIL,
         pass: process.env.SMTP_PASSWORD,
       },
     });
 
-    const mailOptions = {
+    transporter.sendMail({
       from: process.env.SMTP_MAIL,
       to: email,
       subject,
-      html: message, // HTML template
-    };
+      html: message,
+    });
 
-    await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully!");
-  } catch (error) {
-    console.error("Email sent error", error);
+    console.log("mail sent successfully");
+    res.status(201).json({
+      status: "success",
+      message: postmanmsg,
+    });
+  } catch (err) {
+    res.status(401).json({
+      status: "fail",
+      message: `Something went wrong , verification code not sent `,
+    });
   }
 };
-
-module.exports = sendEmail;
