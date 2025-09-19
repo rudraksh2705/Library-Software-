@@ -7,6 +7,7 @@ const appError = require("./Utils/ErrorHandlers/appError");
 const userRouter = require("./Routes/UserRouter");
 const morgan = require("morgan");
 const bookRouter = require("./Routes/bookRoutes");
+const reviewRouter = require("./Routes/reviewRouter");
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(`/api/v1/users`, userRouter);
 app.use("/api/v1/books", bookRouter);
+app.use("/api/v1/review", reviewRouter);
 
 app.use((err, req, res, next) => {
   err.message = err.message || "Internal Server Error";

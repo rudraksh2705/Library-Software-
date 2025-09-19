@@ -40,7 +40,15 @@ exports.deleteBook = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllBooks = catchAsync(async (req, res, next) => {
-  const data = await Books.find();
+  const data = await Books.find().populate({
+    path: "reviews",
+    populate: {
+      path: "user",
+      select: "name email",
+    },
+  });
+
+  console.log("hi2");
 
   if (!data) {
     return next(new appError("No data Found", 401));

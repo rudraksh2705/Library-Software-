@@ -28,11 +28,25 @@ const bookSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    reviews: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "Review",
+        foreignField: "",
+      },
+    ],
   },
   {
     timestamps: true,
   }
 );
+
+// bookSchema.pre(/^find/, function (next) {
+//   this.populate({
+//     path: "reviews",
+//     select: "rating description user",
+//   });
+// });
 
 const Books = mongoose.model("Book", bookSchema);
 module.exports = Books;
