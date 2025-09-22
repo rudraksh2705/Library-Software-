@@ -6,6 +6,7 @@ const bookSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
     },
     author: {
       type: String,
@@ -28,25 +29,20 @@ const bookSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    reviews: [
-      {
-        type: mongoose.Schema.ObjectId,
-        ref: "Review",
-        foreignField: "",
-      },
-    ],
   },
   {
     timestamps: true,
   }
 );
 
-// bookSchema.pre(/^find/, function (next) {
-//   this.populate({
-//     path: "reviews",
-//     select: "rating description user",
-//   });
-// });
+bookSchema.set("toObject", { virtuals: true });
+bookSchema.set("toJSON", { virtuals: true });
+
+bookSchema.virtual("reviews", {
+  ref: "Review",
+  foreignField: "book",
+  localField: "_id",
+});
 
 const Books = mongoose.model("Book", bookSchema);
 module.exports = Books;

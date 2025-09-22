@@ -4,6 +4,7 @@ const {
   isAuthenticated,
   isAuthorized,
 } = require("../Controllers/authController");
+const reviewRouter = require("../Routes/reviewRouter");
 
 const Router = express.Router();
 
@@ -20,5 +21,7 @@ Router.route("/delete/:id").delete(
   isAuthorized("admin"),
   bookController.deleteBook
 );
+
+Router.use("/review/:bookId", reviewRouter);
 
 module.exports = Router;
