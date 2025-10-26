@@ -14,10 +14,19 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ],
     credentials: true,
   })
 );
+
+// Add test route
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Backend is working!", status: "success" });
+});
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
