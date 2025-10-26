@@ -5,6 +5,8 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const userRoutes = require("./Routes/userRoutes");
+const bookRoutes = require("./Routes/bookRoutes");
+const borrowRoutes = require("./Routes/borrowRoutes");
 
 const app = express();
 
@@ -19,6 +21,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/books", bookRoutes);
+app.use("/api/v1/borrow", borrowRoutes);
 
 app.use((err, req, res, next) => {
   // Default values
