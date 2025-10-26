@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { FaBook, FaUser, FaLock } from "react-icons/fa";
+import { findUserByEmail } from "../mockData";
 
 function Login({ setUser }) {
   const [formData, setFormData] = useState({
@@ -16,25 +16,36 @@ function Login({ setUser }) {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data } = await axios.post("/users/login", formData);
+      // Mock authentication (no API call)
+      const user = findUserByEmail(formData.email);
+
+      if (!user || user.password !== formData.password) {
+        toast.error("Invalid email or password");
+        setLoading(false);
+        return;
+      }
+
+      // Save to localStorage
+      localStorage.setItem("currentUser", JSON.stringify(user));
+
       toast.success("Login successful!");
-      setUser(data.user);
+      setUser(user);
 
       // Redirect based on role
-      if (data.user.role === "admin") {
+      if (user.role === "admin") {
         navigate("/admin");
-      } else if (data.user.role === "librarian") {
+      } else if (user.role === "librarian") {
         navigate("/librarian");
       } else {
         navigate("/student");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
+      toast.error("Login failed");
     } finally {
       setLoading(false);
     }

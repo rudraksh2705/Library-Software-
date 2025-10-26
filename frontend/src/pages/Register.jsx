@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import {
   FaBook,
@@ -37,18 +36,31 @@ function Register({ setUser }) {
     setLoading(true);
 
     try {
-      await axios.post("/users/register", {
+      // Mock registration - just create user in localStorage
+      const newUser = {
+        _id: `user${Date.now()}`,
         name: formData.name,
         email: formData.email,
         password: formData.password,
-      });
+        role: "student",
+        accountVerified: true,
+      };
 
-      toast.success("Verification code sent to your email!");
+      // Save to localStorage (mock users list)
+      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      existingUsers.push(newUser);
+      localStorage.setItem("users", JSON.stringify(existingUsers));
 
-      // Navigate to OTP verification
-      navigate("/verify-otp", { state: { email: formData.email } });
+      // Auto-login
+      localStorage.setItem("currentUser", JSON.stringify(newUser));
+      toast.success("Registration successful! Logging you in...");
+
+      setTimeout(() => {
+        navigate("/student");
+        window.location.reload();
+      }, 1000);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration failed");
+      toast.error("Registration failed");
     } finally {
       setLoading(false);
     }

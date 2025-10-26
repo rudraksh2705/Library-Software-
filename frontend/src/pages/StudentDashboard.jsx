@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import {
   FaBook,
@@ -11,6 +10,7 @@ import {
   FaBars,
   FaTimes,
 } from "react-icons/fa";
+import { mockBooks } from "../mockData";
 
 function StudentDashboard({ user, setUser }) {
   const [books, setBooks] = useState([]);
@@ -20,29 +20,22 @@ function StudentDashboard({ user, setUser }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchBooks();
+    // Load from localStorage or use mock data
+    const savedBooks = localStorage.getItem("books");
+    if (savedBooks) {
+      setBooks(JSON.parse(savedBooks));
+    } else {
+      setBooks(mockBooks);
+      localStorage.setItem("books", JSON.stringify(mockBooks));
+    }
+    setLoading(false);
   }, []);
 
-  const fetchBooks = async () => {
-    try {
-      const { data } = await axios.get("/books/all");
-      setBooks(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch books");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await axios.post("/users/logout");
-      setUser(null);
-      navigate("/login");
-      toast.success("Logged out successfully");
-    } catch (error) {
-      toast.error("Logout failed");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    setUser(null);
+    navigate("/login");
+    toast.success("Logged out successfully");
   };
 
   const filteredBooks = books.filter(

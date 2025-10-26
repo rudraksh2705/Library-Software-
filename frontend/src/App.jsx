@@ -19,29 +19,34 @@ import Books from "./pages/Books";
 import BookDetails from "./pages/BookDetails";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Set axios defaults
-axios.defaults.withCredentials = true;
-axios.defaults.baseURL =
-  import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+// Mock authentication (no backend needed)
+import { mockBooks, mockReviews, mockRequests } from "./mockData";
 
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const { data } = await axios.get("/users/me");
-      setUser(data.user);
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
+    // Initialize mock data in localStorage if not present
+    if (!localStorage.getItem("books")) {
+      localStorage.setItem("books", JSON.stringify(mockBooks));
     }
-  };
+
+    if (!localStorage.getItem("reviews")) {
+      localStorage.setItem("reviews", JSON.stringify(mockReviews));
+    }
+
+    if (!localStorage.getItem("requests")) {
+      localStorage.setItem("requests", JSON.stringify(mockRequests));
+    }
+
+    // Check if user is logged in from localStorage
+    const savedUser = localStorage.getItem("currentUser");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
+  }, []);
 
   if (loading) {
     return (

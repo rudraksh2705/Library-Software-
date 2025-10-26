@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { FaSearch, FaEye, FaStar } from "react-icons/fa";
+import { mockBooks } from "../mockData";
 
 function Books({ user }) {
   const [books, setBooks] = useState([]);
@@ -10,19 +10,16 @@ function Books({ user }) {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    fetchBooks();
-  }, []);
-
-  const fetchBooks = async () => {
-    try {
-      const { data } = await axios.get("/books/all");
-      setBooks(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch books");
-    } finally {
-      setLoading(false);
+    // Load from localStorage or use mock data
+    const savedBooks = localStorage.getItem("books");
+    if (savedBooks) {
+      setBooks(JSON.parse(savedBooks));
+    } else {
+      setBooks(mockBooks);
+      localStorage.setItem("books", JSON.stringify(mockBooks));
     }
-  };
+    setLoading(false);
+  }, []);
 
   const filteredBooks = books.filter(
     (book) =>

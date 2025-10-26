@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import {
   FaBook,
@@ -11,6 +10,7 @@ import {
   FaBars,
   FaTimes as FaTimesIcon,
 } from "react-icons/fa";
+import { getAllLibrarians, getAllUsers } from "../mockData";
 
 function AdminDashboard({ user, setUser }) {
   const [librarians, setLibrarians] = useState([]);
@@ -21,53 +21,23 @@ function AdminDashboard({ user, setUser }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchLibrarians();
-    fetchAllUsers();
+    // Load mock data
+    setLibrarians(getAllLibrarians());
+    setAllUsers(getAllUsers());
   }, []);
 
-  const fetchLibrarians = async () => {
-    try {
-      const { data } = await axios.get("/users/admin/librarians");
-      setLibrarians(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch librarians");
-    }
-  };
-
-  const fetchAllUsers = async () => {
-    try {
-      const { data } = await axios.get("/users/admin/all-users");
-      setAllUsers(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch users");
-    }
-  };
-
-  const handleDeleteLibrarian = async (librarianId) => {
+  const handleDeleteLibrarian = (librarianId) => {
     if (!window.confirm("Are you sure you want to delete this librarian?")) {
       return;
     }
-
-    try {
-      // Note: You'll need to implement this endpoint in the backend
-      toast.warning(
-        "Delete librarian functionality needs to be implemented in backend"
-      );
-      fetchLibrarians();
-    } catch (error) {
-      toast.error("Failed to delete librarian");
-    }
+    toast.warning("In mock mode, delete not implemented");
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.post("/users/logout");
-      setUser(null);
-      navigate("/login");
-      toast.success("Logged out successfully");
-    } catch (error) {
-      toast.error("Logout failed");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    setUser(null);
+    navigate("/login");
+    toast.success("Logged out successfully");
   };
 
   return (
@@ -278,19 +248,16 @@ function AddLibrarianModal({ onClose, onSuccess }) {
   });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      await axios.post("/users/admin/add-librarian", formData);
-      toast.success("Librarian added successfully");
+    // Mock: just show success message
+    toast.success("Librarian added successfully (mock mode)");
+    setTimeout(() => {
       onSuccess();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add librarian");
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
   return (

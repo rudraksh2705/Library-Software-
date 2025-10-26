@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import {
   FaBook,
@@ -15,6 +14,7 @@ import {
   FaBars,
   FaTimes as FaTimesIcon,
 } from "react-icons/fa";
+import { mockBooks, mockRequests } from "../mockData";
 
 function LibrarianDashboard({ user, setUser }) {
   const [books, setBooks] = useState([]);
@@ -27,75 +27,60 @@ function LibrarianDashboard({ user, setUser }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchBooks();
-    fetchRequests();
+    // Load from localStorage or use mock data
+    const savedBooks = localStorage.getItem("books");
+    if (savedBooks) {
+      setBooks(JSON.parse(savedBooks));
+    } else {
+      setBooks(mockBooks);
+      localStorage.setItem("books", JSON.stringify(mockBooks));
+    }
+
+    // Load requests from localStorage
+    const savedRequests = localStorage.getItem("requests");
+    if (savedRequests) {
+      setRequests(JSON.parse(savedRequests));
+    } else {
+      setRequests(mockRequests);
+      localStorage.setItem("requests", JSON.stringify(mockRequests));
+    }
+
+    setLoading(false);
   }, []);
 
-  const fetchBooks = async () => {
-    try {
-      const { data } = await axios.get("/books/all");
-      setBooks(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch books");
-    } finally {
-      setLoading(false);
-    }
+  const handleApproveRequest = (requestId) => {
+    const updatedRequests = requests.map((req) =>
+      req._id === requestId ? { ...req, status: "approved" } : req
+    );
+    setRequests(updatedRequests);
+    localStorage.setItem("requests", JSON.stringify(updatedRequests));
+    toast.success("Request approved successfully!");
   };
 
-  const fetchRequests = async () => {
-    try {
-      const { data } = await axios.get("/requests/all");
-      setRequests(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch requests");
-    }
+  const handleRejectRequest = (requestId) => {
+    const updatedRequests = requests.map((req) =>
+      req._id === requestId ? { ...req, status: "rejected" } : req
+    );
+    setRequests(updatedRequests);
+    localStorage.setItem("requests", JSON.stringify(updatedRequests));
+    toast.success("Request rejected successfully!");
   };
 
-  const handleApproveRequest = async (requestId) => {
-    try {
-      await axios.patch(`/requests/approve/${requestId}`);
-      toast.success("Request approved");
-      fetchRequests();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to approve request");
-    }
-  };
-
-  const handleRejectRequest = async (requestId) => {
-    try {
-      await axios.patch(`/requests/reject/${requestId}`, {
-        reason: "Book unavailable",
-      });
-      toast.success("Request rejected");
-      fetchRequests();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to reject request");
-    }
-  };
-
-  const handleDeleteBook = async (bookId) => {
+  const handleDeleteBook = (bookId) => {
     if (!window.confirm("Are you sure you want to delete this book?")) {
       return;
     }
-
-    try {
-      await axios.delete(`/books/admin/delete/${bookId}`);
-      toast.success("Book deleted");
-      fetchBooks();
-    } catch (error) {
-      toast.error("Failed to delete book");
-    }
+    const updatedBooks = books.filter((book) => book._id !== bookId);
+    setBooks(updatedBooks);
+    localStorage.setItem("books", JSON.stringify(updatedBooks));
+    toast.success("Book deleted successfully!");
   };
 
-  const handleLogout = async () => {
-    try {
-      await axios.post("/users/logout");
-      setUser(null);
-      navigate("/login");
-      toast.success("Logged out successfully");
-    } catch (error) {
-      toast.error("Logout failed");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("currentUser");
+    setUser(null);
+    navigate("/login");
+    toast.success("Logged out successfully");
   };
 
   const filteredBooks = books.filter(
@@ -327,8 +312,12 @@ function LibrarianDashboard({ user, setUser }) {
         <AddBookModal
           onClose={() => setShowAddBook(false)}
           onSuccess={() => {
+            // Reload books from localStorage
+            const savedBooks = localStorage.getItem("books");
+            if (savedBooks) {
+              setBooks(JSON.parse(savedBooks));
+            }
             setShowAddBook(false);
-            fetchBooks();
           }}
         />
       )}
@@ -347,18 +336,33 @@ function AddBookModal({ onClose, onSuccess }) {
   });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      await axios.post("/books/admin/add", formData);
+    // Mock: Create new book
+    const newBook = {
+      _id: `book${Date.now()}`,
+      title: formData.title,
+      author: formData.author,
+      description: formData.description,
+      price: parseFloat(formData.price),
+      quantity: parseInt(formData.quantity),
+      availability: parseInt(formData.quantity) > 0,
+      averageRating: 0,
+      totalRatings: 0,
+    };
+
+    // Save to localStorage
+    const savedBooks = JSON.parse(localStorage.getItem("books") || "[]");
+    savedBooks.push(newBook);
+    localStorage.setItem("books", JSON.stringify(savedBooks));
+
+    toast.success("Book added successfully (mock mode)");
+    setTimeout(() => {
       onSuccess();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to add book");
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
   return (

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { FaStar, FaArrowLeft, FaPlusCircle } from "react-icons/fa";
+import { mockBooks, mockReviews, getBookReviews } from "../mockData";
 
 function BookDetails({ user }) {
   const { id } = useParams();
@@ -17,32 +17,29 @@ function BookDetails({ user }) {
   });
 
   useEffect(() => {
-    fetchBookDetails();
-    fetchReviews();
-  }, [id]);
+    // Load book from localStorage
+    const savedBooks = JSON.parse(localStorage.getItem("books") || "[]");
+    const foundBook =
+      savedBooks.find((b) => b._id === id) ||
+      mockBooks.find((b) => b._id === id);
 
-  const fetchBookDetails = async () => {
-    try {
-      const { data } = await axios.get(`/books/${id}`);
-      setBook(data.data);
-    } catch (error) {
-      toast.error("Failed to fetch book details");
+    if (!foundBook) {
+      toast.error("Book not found");
       navigate("/books");
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
-  const fetchReviews = async () => {
-    try {
-      const { data } = await axios.get(`/reviews/book/${id}`);
-      setReviews(data.data);
-    } catch (error) {
-      console.error("Failed to fetch reviews");
-    }
-  };
+    setBook(foundBook);
 
-  const handleRequestBook = async () => {
+    // Load reviews from localStorage
+    const savedReviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+    const bookReviews = savedReviews.filter((r) => r.book === id);
+    setReviews(bookReviews);
+
+    setLoading(false);
+  }, [id, navigate]);
+
+  const handleRequestBook = () => {
     if (!user) {
       toast.error("Please login to request a book");
       navigate("/login");
@@ -54,15 +51,22 @@ function BookDetails({ user }) {
       return;
     }
 
-    try {
-      await axios.post("/requests/create", { bookId: id });
-      toast.success("Book request submitted successfully!");
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to request book");
-    }
+    // Mock: Save request to localStorage
+    const requests = JSON.parse(localStorage.getItem("requests") || "[]");
+    requests.push({
+      _id: `req${Date.now()}`,
+      user: { id: user._id, name: user.name, email: user.email },
+      book: { id: book._id, title: book.title },
+      status: "pending",
+      requestDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+    });
+    localStorage.setItem("requests", JSON.stringify(requests));
+
+    toast.success("Book request submitted successfully! (mock mode)");
   };
 
-  const handleSubmitReview = async (e) => {
+  const handleSubmitReview = (e) => {
     e.preventDefault();
     if (!user) {
       toast.error("Please login to submit a review");
@@ -79,20 +83,43 @@ function BookDetails({ user }) {
       return;
     }
 
-    try {
-      await axios.post("/reviews/create", {
-        bookId: id,
-        rating: reviewData.rating,
-        comment: reviewData.comment,
-      });
-      toast.success("Review submitted successfully!");
-      setShowReviewForm(false);
-      setReviewData({ rating: 0, comment: "" });
-      fetchBookDetails();
-      fetchReviews();
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to submit review");
-    }
+    // Mock: Save review to localStorage
+    const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+    const newReview = {
+      _id: `review${Date.now()}`,
+      user: { id: user._id, name: user.name },
+      book: id,
+      rating: reviewData.rating,
+      comment: reviewData.comment,
+      createdAt: new Date().toISOString(),
+    };
+
+    reviews.push(newReview);
+    localStorage.setItem("reviews", JSON.stringify(reviews));
+
+    // Update book average rating
+    const bookReviews = reviews.filter((r) => r.book === id);
+    const avgRating =
+      bookReviews.reduce((sum, r) => sum + r.rating, 0) / bookReviews.length;
+
+    const savedBooks = JSON.parse(localStorage.getItem("books") || "[]");
+    const updatedBooks = savedBooks.map((b) =>
+      b._id === id
+        ? {
+            ...b,
+            averageRating: avgRating.toFixed(1),
+            totalRatings: bookReviews.length,
+          }
+        : b
+    );
+    localStorage.setItem("books", JSON.stringify(updatedBooks));
+
+    toast.success("Review submitted successfully! (mock mode)");
+    setShowReviewForm(false);
+    setReviewData({ rating: 5, comment: "" });
+
+    // Reload reviews
+    setReviews(bookReviews);
   };
 
   if (loading) {
