@@ -7,7 +7,6 @@ import {
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useState, useEffect } from "react";
-import axios from "axios";
 
 // Pages
 import Login from "./pages/Login";
