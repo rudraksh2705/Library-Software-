@@ -17,4 +17,23 @@ Router.route("/updatePassword").patch(
   authController.updatePassword
 );
 
+// Admin routes
+Router.route("/admin/add-librarian").post(
+  authController.isAuthenticated,
+  authController.isAuthorized("admin"),
+  authController.addLibrarian
+);
+
+Router.route("/admin/librarians").get(
+  authController.isAuthenticated,
+  authController.isAuthorized("admin"),
+  authController.getAllLibrarians
+);
+
+Router.route("/admin/all-users").get(
+  authController.isAuthenticated,
+  authController.isAuthorized("admin"),
+  authController.getAllUsers
+);
+
 module.exports = Router;

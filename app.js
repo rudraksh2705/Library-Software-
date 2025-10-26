@@ -7,12 +7,15 @@ const morgan = require("morgan");
 const userRoutes = require("./Routes/userRoutes");
 const bookRoutes = require("./Routes/bookRoutes");
 const borrowRoutes = require("./Routes/borrowRoutes");
+const requestRoutes = require("./Routes/requestRoutes");
+const reviewRoutes = require("./Routes/reviewRoutes");
 
 const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "http://localhost:3000"],
+    credentials: true,
   })
 );
 app.use(cookieParser());
@@ -23,6 +26,8 @@ app.use(morgan("dev"));
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/books", bookRoutes);
 app.use("/api/v1/borrow", borrowRoutes);
+app.use("/api/v1/requests", requestRoutes);
+app.use("/api/v1/reviews", reviewRoutes);
 
 app.use((err, req, res, next) => {
   // Default values

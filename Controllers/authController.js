@@ -145,6 +145,81 @@ exports.getUser = catchAsync(async (req, res, next) => {
   });
 });
 
+// Add librarian (admin only)
+exports.addLibrarian = catchAsync(async (req, res, next) => {
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return next(new appError("Please provide all fields", 400));
+  }
+
+  if (password.length < 8 || password.length > 16) {
+    return next(new appError("Password length must be between 8 and 16", 400));
+  }
+
+  const existingUser = await User.findOne({ email, accountVerified: true });
+  if (existingUser) {
+    return next(new appError("A user already exists with this email", 400));
+  }
+
+  const librarian = await User.create({
+    name,
+    email,
+    password,
+    role: "librarian",
+    accountVerified: true,
+  });
+
+  res.status(201).json({
+    status: "success",
+    message: "Librarian added successfully",
+    librarian: {
+      id: librarian._id,
+      name: librarian.name,
+      email: librarian.email,
+      role: librarian.role,
+    },
+  });
+});
+
+// Get all librarians (admin only)
+exports.getAllLibrarians = catchAsync(async (req, res, next) => {
+  const librarians = await User.find({
+    role: "librarian",
+    accountVerified: true,
+  }).select(
+    "-password -verificationCode -verificationCodeExpires -passwordResetToken -passwordResetTokenExpires"
+  );
+
+  res.status(200).json({
+    status: "success",
+    results: librarians.length,
+    data: librarians,
+  });
+});
+
+// Get all users (admin only)
+exports.getAllUsers = catchAsync(async (req, res, next) => {
+  const { role } = req.query;
+  let filter = { accountVerified: true };
+
+  if (role) {
+    filter.role = role;
+  }
+
+  const users = await User.find(filter)
+    .select(
+      "-password -verificationCode -verificationCodeExpires -passwordResetToken -passwordResetTokenExpires"
+    )
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    status: "success",
+    results: users.length,
+    data: users,
+  });
+});
+
 exports.forgetPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
   if (!email) {

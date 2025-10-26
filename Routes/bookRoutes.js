@@ -4,21 +4,25 @@ const Router = express.Router();
 const authController = require("../Controllers/authController");
 const BookController = require("../Controllers/bookController");
 
-Router.route("/all").get(
-  authController.isAuthenticated,
-  BookController.getAllBooks
-);
+Router.route("/all").get(BookController.getAllBooks);
+
+Router.route("/:id").get(BookController.getBookById);
 
 Router.route("/admin/add").post(
-  authController.isAuthenticated /*,
-  authController.isAuthorized("admin"),*/,
+  authController.isAuthenticated,
+  authController.isAuthorized("admin", "librarian"),
   BookController.addBook
 );
 
-Router.route("/delete/:id").delete(
+Router.route("/admin/update/:id").patch(
   authController.isAuthenticated,
-  /*
-  authController.isAuthorized("admin")*/
+  authController.isAuthorized("admin", "librarian"),
+  BookController.updateBook
+);
+
+Router.route("/admin/delete/:id").delete(
+  authController.isAuthenticated,
+  authController.isAuthorized("admin", "librarian"),
   BookController.deleteBook
 );
 
