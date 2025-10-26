@@ -1,9 +1,10 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config({ path: "./config.env" });
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-
-dotenv.config({ path: "./config.env" });
+const morgan = require("morgan");
+const userRoutes = require("./Routes/userRoutes");
 
 const app = express();
 
@@ -15,6 +16,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(morgan("dev"));
+
+app.use("/api/v1/users", userRoutes);
 
 app.use((err, req, res, next) => {
   // Default values
@@ -38,6 +42,7 @@ app.use((err, req, res, next) => {
   }
 
   // Send final response
+  console.log("error");
   res.status(err.statusCode).json({
     status: "error",
     message: err.message,
