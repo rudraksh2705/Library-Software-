@@ -231,11 +231,17 @@ pm2 serve frontend/dist 3000 --name frontend
 
 ## Default Accounts
 
-After running `createAdmin.js`:
+After running `npm run seed`:
 
-- **Email:** admin@library.com
-- **Password:** admin123
+- **Email:** khandelwalr207@gmail.com
+- **Password:** test1234
+- **Name:** Rudraksh
 - **Role:** Admin
+
+**Additional Users (all password: test1234):**
+
+- 2 Librarians: frank@example.com, grace@example.com
+- 5 Students: alice@example.com, bob@example.com, charlie@example.com, diana@example.com, emma@example.com
 
 **Security:** Change default passwords immediately in production!
 

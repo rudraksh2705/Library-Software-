@@ -93,6 +93,23 @@ npm start
 
 The backend will run on `http://localhost:8000`
 
+5. Seed the database with sample data (optional but recommended):
+
+```bash
+npm run seed
+```
+
+This will create:
+
+- 1 admin user (Rudraksh - khandelwalr207@gmail.com)
+- 2 librarians
+- 5 students
+- 12 books with reviews
+- Book requests
+
+All users have password: `test1234`
+Admin login: `khandelwalr207@gmail.com` / `test1234`
+
 ### Frontend Setup:
 
 1. Navigate to the frontend directory:
@@ -232,19 +249,30 @@ Library-Software-/
 
 ## Default Credentials
 
-The system starts with no users. You need to:
+After running `npm run seed`, you'll have:
 
-1. Register the first user (this will be a student by default)
-2. You can modify the database to change a user's role to "admin" or "librarian"
+### Admin Account:
 
-To create an admin in MongoDB:
+- **Email:** khandelwalr207@gmail.com
+- **Password:** test1234
+- **Name:** Rudraksh
+- **Role:** Admin
 
-```javascript
-use libraryProj
-db.users.updateOne(
-  { email: "admin@example.com" },
-  { $set: { role: "admin", accountVerified: true } }
-)
+### All User Accounts:
+
+- **Password:** test1234 (for all users)
+- 2 Librarians: frank@example.com, grace@example.com
+- 5 Students: alice@example.com, bob@example.com, charlie@example.com, diana@example.com, emma@example.com
+
+### Sample Books:
+
+- 12 books with varying reviews and ratings
+- Books have descriptions, prices, and quantities
+
+You can also create your own admin by running:
+
+```bash
+node createAdmin.js
 ```
 
 ## Notes

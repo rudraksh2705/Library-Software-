@@ -6,23 +6,25 @@ require("dotenv").config({ path: "./config.env" });
 async function createAdmin() {
   try {
     // Connect to MongoDB
-    await mongoose.connect("mongodb://127.0.0.1:27017/libraryProj");
+    await mongoose.connect("mongodb://127.0.0.1:27017/libraryProj", {
+      serverSelectionTimeoutMS: 5000,
+    });
     console.log("MongoDB connected");
 
     // Create admin user
-    const hashedPassword = await bcrypt.hash("admin123", 10);
+    const hashedPassword = await bcrypt.hash("test1234", 10);
 
     const admin = await User.create({
-      name: "Admin User",
-      email: "admin@library.com",
+      name: "Rudraksh",
+      email: "khandelwalr207@gmail.com",
       password: hashedPassword,
       role: "admin",
       accountVerified: true,
     });
 
     console.log("Admin created successfully:");
-    console.log("Email: admin@library.com");
-    console.log("Password: admin123");
+    console.log("Email: khandelwalr207@gmail.com");
+    console.log("Password: test1234");
     console.log("Role: admin");
 
     process.exit(0);
