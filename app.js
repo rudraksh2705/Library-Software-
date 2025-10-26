@@ -1,75 +1,46 @@
 const express = require("express");
 const dotenv = require("dotenv");
-dotenv.config({ path: "./config.env" });
-const cookieParser = require("cookie-parser");
 const cors = require("cors");
-const appError = require("./Utils/ErrorHandlers/appError");
-const userRouter = require("./Routes/UserRouter");
-const morgan = require("morgan");
-const bookRouter = require("./Routes/bookRoutes");
-const reviewRouter = require("./Routes/reviewRouter");
+const cookieParser = require("cookie-parser");
+
+dotenv.config({ path: "./config.env" });
 
 const app = express();
 
-app.use(morgan("dev"));
 app.use(
   cors({
     origin: ["http://localhost:5173"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    credentials: true,
   })
 );
-
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api/v1/users", userRouter);
-app.use("/api/v1/books", bookRouter);
-app.use("/api/v1/review", reviewRouter);
-
 app.use((err, req, res, next) => {
-  err.message = err.message || "Internal Server Error";
+  // Default values
   err.statusCode = err.statusCode || 500;
+  err.message = err.message || "Internal Server Error";
 
-  if (err.code === 11000) {
-    console.log(err);
-    const statusCode = 400;
-    const message = "Duplicate Field Value Entered";
-    err = new appError(message, statusCode);
+  // Handle specific errors
+  if (err.name === "CastError") {
+    err.message = `Invalid ${err.path}: ${err.value}`;
+    err.statusCode = 400;
   }
 
   if (err.name === "JsonWebTokenError") {
-    const statusCode = 400;
-    const message = "Invalid JSON web token";
-    err = new appError(message, statusCode);
+    err.message = "Invalid token. Please log in again.";
+    err.statusCode = 401;
   }
 
   if (err.name === "TokenExpiredError") {
-    const statusCode = 400;
-    const message = "Expired JSON web token";
-    err = new appError(message, statusCode);
+    err.message = "Your token has expired. Please log in again.";
+    err.statusCode = 401;
   }
 
-  if (err.name === "CastError") {
-    const statusCode = 400;
-    const message = `Resource Not Found. Invalid Path : ${err.path}`;
-    err = new appError(message, statusCode);
-  } else {
-    const statusCode = err.statusCode || 401;
-    const message = err.message || "Something went wrong !!";
-    err = new appError(message, statusCode);
-  }
-
-  const errorMessage = err.errors
-    ? Object.values(err.errors)
-        .map((error) => error.message)
-        .join(" ")
-    : err.message;
-
+  // Send final response
   res.status(err.statusCode).json({
-    status: "Failed",
-    message: errorMessage,
+    status: "error",
+    message: err.message,
   });
 });
 
