@@ -39,17 +39,8 @@ const UserSchema = new mongoose.Schema(
 
     borrowedBooks: [
       {
-        bookId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Borrow",
-        },
-        returned: {
-          type: Boolean,
-          default: false,
-        },
-        bookTitle: String,
-        borrowDates: Date,
-        dueDate: Date,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Borrowed",
       },
     ],
 
@@ -65,6 +56,13 @@ const UserSchema = new mongoose.Schema(
     verificationCodeExpires: {
       type: Date,
     },
+
+    requests: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Request",
+      },
+    ],
 
     resetPasswordToken: String,
 
@@ -105,7 +103,6 @@ UserSchema.methods.generateToken = function () {
 };
 
 UserSchema.methods.check = async function (userPassword) {
-  console.log(userPassword);
   const decoded = await bcrypt.compare(userPassword, this.password);
   return decoded;
 };

@@ -28,6 +28,10 @@ const bookSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    totalBorrowed: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

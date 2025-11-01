@@ -4,9 +4,11 @@ const {
   isAuthenticated,
   isAuthorized,
 } = require("../Controllers/authController");
+const requestRoutes = require("../Routes/requestRoutes");
 
 const Router = express.Router();
 
+Router.use("/request", requestRoutes);
 Router.route("/admin/add").post(
   isAuthenticated,
   //   isAuthorized("admin"),
